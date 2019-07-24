@@ -1,0 +1,4 @@
+"STARTUP.obj",
+"HC_SR04.obj" 
+TO "HC_SR04" 
+RAMSIZE(256) 

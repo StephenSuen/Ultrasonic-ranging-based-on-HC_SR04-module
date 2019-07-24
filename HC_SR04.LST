@@ -1,0 +1,166 @@
+C51 COMPILER V9.51   HC_SR04                                                               12/30/2016 18:56:01 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE HC_SR04
+OBJECT MODULE PLACED IN HC_SR04.OBJ
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE HC_SR04.c BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include <intrins.h>
+   3          
+   4          #define gan_gao 29 //¸Ë×Ó¸ß¶È
+   5          
+   6          unsigned char code seg_value[] = {0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f,0x00};//0-9
+   7          unsigned char code wei_value[] = {0xfe,0xfd,0xfb,0xf7,0xef,0xdf,0xbf,0x7f};
+   8          unsigned char dspbuf[] = {10,10,10,10,10,8,8,8};
+   9          sbit duan_s = P2^0;
+  10          sbit wei_s = P2^1;
+  11          sbit tx = P2^2;
+  12          sbit rx = P2^3;
+  13          bit flag = 0;
+  14          unsigned int distance = 0;
+  15          unsigned int ren_hight = 0;//ÈË¸ß¶È
+  16          void display()
+  17          {
+  18   1        static unsigned char i = 0;
+  19   1        duan_s = 1;
+  20   1        P0 = 0;
+  21   1        duan_s = 0;
+  22   1        
+  23   1        duan_s = 1;
+  24   1        P0 = seg_value[dspbuf[i]];
+  25   1        duan_s = 0;
+  26   1        
+  27   1        wei_s = 1;
+  28   1        P0 = wei_value[i];
+  29   1        wei_s = 0;
+  30   1        
+  31   1        i++;
+  32   1        if(i == 8)
+  33   1          i = 0;
+  34   1      }
+  35          
+  36          void send_wave()
+  37          {
+  38   1         tx=1;                       
+  39   1          _nop_(); 
+  40   1          _nop_(); 
+  41   1          _nop_(); 
+  42   1          _nop_(); 
+  43   1          _nop_(); 
+  44   1          _nop_(); 
+  45   1          _nop_(); 
+  46   1          _nop_(); 
+  47   1          _nop_(); 
+  48   1          _nop_(); 
+  49   1          _nop_(); 
+  50   1          _nop_(); 
+  51   1          _nop_(); 
+  52   1          _nop_(); 
+  53   1          _nop_(); 
+  54   1          _nop_(); 
+  55   1          _nop_();
+C51 COMPILER V9.51   HC_SR04                                                               12/30/2016 18:56:01 PAGE 2   
+
+  56   1          _nop_(); 
+  57   1          _nop_(); 
+  58   1          _nop_(); 
+  59   1          _nop_();
+  60   1          tx=0;
+  61   1      }
+  62          
+  63          void timer0_init()//¶¨Ê±Æ÷0ÓÃÀ´ÊýÂë¹ÜÏÔÊ¾
+  64          {
+  65   1        TMOD |= 0x01;
+  66   1        TH0 = (65536 - 2000)/256;
+  67   1        TL0 = (65536 - 2000)%256;
+  68   1        EA = 1;
+  69   1        ET0 = 1;
+  70   1        TR0 = 1;
+  71   1      }
+  72          
+  73          void timer1_init()//¶¨Ê±Æ÷1ÓÃÀ´¼ÆËãÊ±¼ä
+  74          {
+  75   1        TMOD |= 0x10;
+  76   1        TH1 = 0;
+  77   1        TL1 = 0;
+  78   1        //ET1 = 1;//×¢ÒâÕâ¸öµØ·½µÄÖÐ¶Ï1Ç§Íò²»ÄÜ´ò¿ª£¬·ñÔò¶¨Ê±Æ÷1Òç³öºó½«½øÈëÖÐ¶Ï·þÎñ´¦Àíº¯ÊýÖÐ£¬µ«ÊÇÎÒÃÇ²¢Ã»ÓÐÎªË
+             -ûÐ´ÖÐ¶Ï´¦Àíº¯ÊýÒòÎªËû½ö½ö×÷Îª¼ÆÊ±×÷ÓÃ£¬Èç¹ûÒç³öÎÒÃÇ½«ÅÐ¶ÏËû½ÓÊÕ²»µ½»Ø²¨ÐÅºÅ
+  79   1      }
+  80          void timer0_isr() interrupt 1
+  81          {
+  82   1        static unsigned char i = 0;
+  83   1        TH0 = (65536 - 2000)/256;
+  84   1        TL0 = (65536 - 2000)%256;
+  85   1        display();
+  86   1        
+  87   1        i++;
+  88   1        if(i == 50)
+  89   1            flag = 1;
+  90   1      }
+  91          
+  92          void main()
+  93          {
+  94   1        unsigned int t;
+  95   1        timer1_init();
+  96   1        timer0_init();
+  97   1        while(1)
+  98   1        {
+  99   2          if(flag == 1)//400ms³¬Éù²¨¼ì²âÒ»´Î
+ 100   2          {
+ 101   3            flag = 0;
+ 102   3            send_wave();
+ 103   3      //      TR1 = 1;
+ 104   3      //      while((rx == 1)&&(TF1 == 0));
+ 105   3      //      TR1 = 0;
+ 106   3            
+ 107   3            while(rx == 0);
+ 108   3            TR1 = 1;
+ 109   3            //while(rx);//½«Õâ¾ä±äÎªÏÂÃæÕâÌõÖ¸Áî¸üºÃ£¬¿É×ö³¬³öÁ¿³ÌÅÐ¶Ï
+ 110   3            while((rx == 1)&&(TF1 == 0));//Õâ¾äÊÇ²âÁ¿rx¸ßµçÆ½Ê±¼ä£¬Èç¹ûÒòÎªTF1Òç³ö¶øÌø³öÑ­»·£¬
+ 111   3            //ÄÇÃ´´ú±íËû²âµÄ¾àÀëÒÑ¾­³¬¹ý(65536us/2*340 =11.14m)11.14m,ÓÖÒòÎªÎÒÃÇËùÑ¡ÓÃµÄ³¬Éù²¨Á¿³Ì´ó¶àÔÚËÄÎåÃ××óÓÒ
+ 112   3            //£¬ËùÒÔÎÒÃÇÕâÑùÐ´£¬ºÃ´¦ÔÚÓÚÏÂÃæÎÒÃÇ¿É×ö³¬³öÁ¿³ÌÅÐ¶Ï
+ 113   3            TR1 = 0;
+ 114   3            
+ 115   3            if(TF1)//³¬³öÁ¿³ÌÅÐ¶Ï£¬Òç³ö,ÔÚ65536usÄÚÈÔ½ÓÊÜ²»µ½»Ø²¨ÐÅºÅÔòÅÐ¶ÏÎªÎÞÐ§¾àÀë
+ 116   3            {
+C51 COMPILER V9.51   HC_SR04                                                               12/30/2016 18:56:01 PAGE 3   
+
+ 117   4              TF1 = 0;
+ 118   4              distance = 888;
+ 119   4            }
+ 120   3            else
+ 121   3            {
+ 122   4              t = TH1;
+ 123   4              t <<= 8;
+ 124   4              t |= TL1;//it's time
+ 125   4              
+ 126   4              distance = (unsigned int)(t*0.017);//cm,´Ó¸¡µãÊý×ª»»³ÉÕýÕûÊý£¬340m/s
+ 127   4              ren_hight = (gan_gao) - distance;
+ 128   4              
+ 129   4            }
+ 130   3            TL1 = 0;
+ 131   3            TH1 = 0;
+ 132   3            
+ 133   3            dspbuf[5] = ren_hight/100;//°ÙÎ»
+ 134   3            dspbuf[6] = ren_hight%100/10;//Ê®Î»
+ 135   3            dspbuf[7] = ren_hight%10;//¸öÎ»
+ 136   3          }
+ 137   2        }
+ 138   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    282    ----
+   CONSTANT SIZE    =     19    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
